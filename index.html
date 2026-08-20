@@ -16,12 +16,7 @@
             align-items: center;
             height: 100vh;
         }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
         .overlay {
             position: relative;
             z-index: 2;
@@ -48,7 +43,7 @@
     </div>
 
     <script>
-        // Matrix Background Animation
+        // Matrix Background
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
@@ -76,45 +71,35 @@
         }
         setInterval(drawMatrix, 33);
 
-        // Notification Logic
+        // Notifications System
         let count = 0;
         const maxNotifications = 5;
         const statusElem = document.getElementById('status');
         const countElem = document.getElementById('count');
 
-        // Inline Service Worker Code Creation
-        const swCode = `
-            self.addEventListener('notificationclick', function(event) {
-                event.notification.close();
-                event.waitUntil(clients.openWindow('/'));
-            });
-        `;
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(swBlob);
-
         async function initNotifications() {
             if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-                statusElem.innerText = "Status: Browser not supported.";
+                statusElem.innerText = "Status: Browser Not Supported";
                 return;
             }
 
             try {
-                // Register Service Worker from Blob URL
-                const registration = await navigator.serviceWorker.register(swUrl);
+                // Registering real sw.js file (Fixed Error)
+                const registration = await navigator.serviceWorker.register('sw.js');
 
                 // Request Permission
                 const permission = await Notification.requestPermission();
 
                 if (permission === 'granted') {
-                    statusElem.innerText = "Status: Permission Granted!";
+                    statusElem.innerText = "Status: Access Granted!";
+                    
+                    // Instant 1st Notification
+                    sendNotification(registration, "System Alert #1", "Test notification started.");
 
-                    // First Immediate Notification
-                    sendNotification(registration, "Testing Started", "Immediate test notification received.");
-
-                    // Notification every 1 minute (60,000 ms)
+                    // 1 Minute Interval for rest 4
                     const interval = setInterval(() => {
                         if (count < maxNotifications) {
-                            sendNotification(registration, `System Alert #${count}`, "Background notification active...");
+                            sendNotification(registration, `System Alert #${count + 1}`, "Background testing...");
                         } else {
                             clearInterval(interval);
                             statusElem.innerText = "Status: Complete (5/5 Sent).";
@@ -132,11 +117,7 @@
         function sendNotification(registration, title, body) {
             count++;
             countElem.innerText = `Notifications Sent: ${count} / 5`;
-
-            registration.showNotification(title, {
-                body: body,
-                vibrate: [200, 100, 200]
-            });
+            registration.showNotification(title, { body: body });
         }
 
         window.onload = initNotifications;
