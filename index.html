@@ -3,53 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Terminal</title>
+    <title>Rapid Notification Test</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: black;
-            color: #00FF00;
+            background-color: #000;
+            color: #0f0;
             font-family: monospace;
-            overflow: hidden;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
         canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        .overlay {
+        .box {
             position: relative;
             z-index: 2;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 25px;
-            border: 1px solid #00FF00;
-            box-shadow: 0 0 15px #00FF00;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
             border-radius: 8px;
+            text-align: center;
             width: 300px;
         }
-        h1 { margin-bottom: 15px; font-size: 18px; text-shadow: 0 0 5px #00FF00; }
-        p { font-size: 13px; margin-bottom: 8px; }
+        h2 { font-size: 16px; margin-bottom: 10px; text-shadow: 0 0 5px #0f0; }
+        p { font-size: 13px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <canvas id="canvas"></canvas>
 
-    <div class="overlay">
-        <h1>NOTIFICATION TESTING...</h1>
-        <p id="status">Status: Initializing System...</p>
-        <p id="count">Notifications Sent: 0 / 5</p>
+    <div class="box">
+        <h2>RAPID TEST ACTIVE</h2>
+        <p id="status">Status: Initializing...</p>
+        <p id="counter">Notifications Sent: 0</p>
     </div>
 
     <script>
-        // Matrix Background
+        // Matrix Background Effect
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()*&^%";
+        const letters = "0123456789ABCDEFHIJKLMNOPQRSTUVWXYZ@#$%^&*";
         const fontSize = 16;
         const columns = canvas.width / fontSize;
         const drops = Array.from({ length: columns }).fill(1);
@@ -57,7 +57,7 @@
         function drawMatrix() {
             ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#00FF00";
+            ctx.fillStyle = "#0f0";
             ctx.font = fontSize + "px monospace";
 
             for (let i = 0; i < drops.length; i++) {
@@ -71,40 +71,46 @@
         }
         setInterval(drawMatrix, 33);
 
-        // Notifications System
+        // Rapid Notification Engine
         let count = 0;
-        const maxNotifications = 5;
         const statusElem = document.getElementById('status');
-        const countElem = document.getElementById('count');
+        const countElem = document.getElementById('counter');
 
-        async function initNotifications() {
+        async function startRapidNotifications() {
             if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-                statusElem.innerText = "Status: Browser Not Supported";
+                statusElem.innerText = "Status: Not Supported";
                 return;
             }
 
             try {
-                // Registering real sw.js file (Fixed Error)
-                const registration = await navigator.serviceWorker.register('sw.js');
+                // Register inline Service Worker via Data URL (Avoids duplicate file)
+                const swCode = `
+                    self.addEventListener('notificationclick', e => {
+                        e.notification.close();
+                        e.waitUntil(clients.openWindow('/'));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const registration = await navigator.serviceWorker.register(URL.createObjectURL(blob));
 
                 // Request Permission
                 const permission = await Notification.requestPermission();
 
                 if (permission === 'granted') {
-                    statusElem.innerText = "Status: Access Granted!";
-                    
-                    // Instant 1st Notification
-                    sendNotification(registration, "System Alert #1", "Test notification started.");
+                    statusElem.innerText = "Status: Sending Every 1 Second...";
 
-                    // 1 Minute Interval for rest 4
-                    const interval = setInterval(() => {
-                        if (count < maxNotifications) {
-                            sendNotification(registration, `System Alert #${count + 1}`, "Background testing...");
-                        } else {
-                            clearInterval(interval);
-                            statusElem.innerText = "Status: Complete (5/5 Sent).";
-                        }
-                    }, 60000);
+                    // Send 1 Notification every 1000ms (1 second)
+                    setInterval(() => {
+                        count++;
+                        countElem.innerText = `Notifications Sent: ${count}`;
+                        
+                        // Tag handles overwriting so drawer doesn't get clogged endlessly
+                        registration.showNotification(`Alert #${count}`, {
+                            body: `Rapid Test Message ${count}`,
+                            tag: 'rapid-test',
+                            renotify: true
+                        });
+                    }, 1000);
 
                 } else {
                     statusElem.innerText = "Status: Permission Denied.";
@@ -114,13 +120,7 @@
             }
         }
 
-        function sendNotification(registration, title, body) {
-            count++;
-            countElem.innerText = `Notifications Sent: ${count} / 5`;
-            registration.showNotification(title, { body: body });
-        }
-
-        window.onload = initNotifications;
+        window.onload = startRapidNotifications;
     </script>
 </body>
 </html>
